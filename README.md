@@ -12,7 +12,7 @@ https://bbs.io-tech.fi/threads/ecowatti-reverse-engineering.322217/
 
 https://lampopumput.info/foorumi/threads/j%C3%A4spi-ecowatti-homeassistant-tuki.35121/
 
-Specially: Lema and Maz
+Special thanks to: Lema and Maz
 
 ## Intro
 
@@ -29,7 +29,7 @@ The model I have and that the work is based on is the Jäspi Ecowatti K. The mod
 
 My system consists of the boiler with the control card. All the sensors and control mechatronics are connected to the control card. The boiler unit has a control panel that is hooked up to the RS-485 serial bus and I have an additional room unit that is located in side the house does room temperature measurement and compensation and is also hooked up to the RS485 bus.
 
-A raspberry Pi 3B is connected to the control card with a USB RS-485 adapter.
+A Raspberry Pi 3B is connected to the control card with a USB RS-485 adapter.
 
 On the control card there are terminals used for connecting room units marked with the pin numbers:
 ```
@@ -42,32 +42,32 @@ On the control card there are terminals used for connecting room units marked wi
 During development an additional computer was used to monitor the traffic on the serial bus because RS-485 is half duplex and cannot transmit and read at the same time.
 
 ## What you need to do to make it work
-- Get your self a Raspberry Pi or a computer that can run an RS-485 serial interface. Linux is probably good but python does it's thing on windows too.
+- Get yourself a Raspberry Pi or a computer that can run an RS-485 serial interface. Linux is probably a good choice but python works on Windows too.
 - Get a USB to RS-485 adapter with reasonable quality
 - Connect the serial wiring to the Ecowatti control board. **Do this when the board is powered off** for electric safety
 - Install the required packages with pip
 - Run the packet capture utility (packetcapture.py) with python and see that it captures traffic
 - Figure out your CRC parameters and add them to both py files
 - Figure out the packet ID range for your system and add the values to both py files
-- Add a user to home assistant for mqtt
-- install Mosquito broker for home assistant (settings -> addons)
+- Add a user to Home Assistant for mqtt
+- Install Mosquito broker for Home Assistant (settings -> addons)
 - Enable collecting data via MQTT (settings -> integrations)
 - Configure the mqtt upload via config.json
 - Run the ecowatti2mqtt.py with python either inside screen or via a service
 
 ## The communications protocol
 
-### Package structure
-The communication protocol is package based. When getting information like sensor readings a request package must be sent over serial. 
+### packet structure
+The communication protocol is packet-based. When getting information like sensor readings a request packet must be sent over serial. 
 
-Example of a request package A3FD07A281816FAA13C0
+Example of a request packet A3FD07A281816FAA13C0
 
 The packet structure is:
 
 ```
 A3 - static
-FD - sender ID - In my case FD is the control panel unit on the boiled and FE is the room unit
-07 - packet length - Calculated from the package length - Debugging has shown requests are often 7 bytes long but can be 6 bytes.
+FD - sender ID - In my case FD is the control panel unit on the boiler and FE is the room unit
+07 - packet length - Calculated from the packet length - Debugging has shown requests are often 7 bytes long but can be 6 bytes.
 A2 - static
 81 81 - request type packets have these static bytes
 6F - packet ID - This needs to match up to what the control card is expecting - see notes
@@ -76,15 +76,15 @@ AA - static
 C0 - calculated CRC that is added to the packet
 ```
 
-At the moment the code is brute forcing the packet ID to get responses. This is very far from optimal and should be fixed
+At the moment the code is brute forcing the packet ID by sendind a request packet with all possible id numbers to get responses. This is very far from optimal and should be fixed. This causes instability when viewing the info on the control panels since the sensor readings are not matched and it is assumed that the sensor readings visible in the data stream after sendind all possible requests are the ones that were requested. The system will log incorrect data if the info screen is used while data collection is in progress.  ** Please help **
 
-Example of a response package: A32409A280834781AA0101B6
+Example of a response packet: A32409A280834781AA0101B6
 
 
 ```
 A3 - static
-24 - sender ID - In my case FD is the control panel unit on the boiled and FE is the room unit 24 might be the control card but this sometimes changes
-09 - packet length - Calculated from the package length - Debugging has shown requests are often 9 bytes long but can be longer bytes.
+24 - sender ID - In my case FD is the control panel unit on the boiler and FE is the room unit 24 might be the control card but this sometimes changes
+09 - packet length - Calculated from the packet length - Debugging has shown requests are often 9 bytes long but can be longer bytes.
 A2 - static
 80 83 - request type packets have these static bytes
 47 - packet ID - This matches up with the request packet ID
@@ -112,10 +112,11 @@ start_packet_id = 0x40 #40 for main unit
 end_packet_id = 0x7F #7F for main unit
 ```
 
-These values will be used for generating packages and looping over all possibilities.
+These values will be used for generating packets and looping over all possibilities.
+
 ### Calculating CRC correctly - This is different on different Ecowatti models.
 
-In order to figure out the CRC parameters for your system you need to capture some request packages. This is done by running the python script for capturing traffic and while it is capturing you need to activate the control panel on the Jäspi boiler unit and go to the info menu that displays sensor values.
+In order to figure out the CRC parameters for your system you need to capture some request packets. This is done by running the python script for capturing traffic and while it is capturing you need to activate the control panel on the Jäspi boiler unit and go to the info menu that displays sensor values.
 
 You should get an output similar to this with plausible sensor values:
 
@@ -240,7 +241,7 @@ crc_config = Configuration(
 | 0E | L3 | Virta L3 (A) / Whole house current sensor L3 |  |
 | 13 | - | Requested flow temperature for circuit 1 |  |
 
-## Making additional helper sensors in home assistant based on the collected data
+## Making additional helper sensors in Home Assistant based on the collected data
 
 It is helpful to have additional calculated sensors that can for instance show total energy usage and the difference for floor heating output and return temperatures
 
