@@ -1,0 +1,13 @@
+{
+    "mqtt_client_name": "Ecowatti",
+    "mqtt_topic_header": "homeassistant/sensor",
+    "mqtt_host": "192.168.0.1",
+    "mqtt_port": 1883,
+    "mqtt_timeout": 60,
+    "mqtt_username": "username",
+    "mqtt_password": "password",
+    "serial_device": "/dev/ttyUSB0",
+    "serial_timeout": 1,
+    "config_update_interval": 15,
+    "sensor_update_interval": 5
+}
